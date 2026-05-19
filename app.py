@@ -133,7 +133,7 @@ def search_arxiv(query: str, max_results: int = 5) -> list[dict]:
     return results
 
 
-def build_doc_context(docs: dict, max_chars: int = 60_000) -> str:
+def build_doc_context(docs: dict, max_chars: int = 10000) -> str:
     if not docs:
         return ""
     parts = []
