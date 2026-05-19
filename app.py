@@ -12,7 +12,7 @@ import textwrap
 
 import arxiv
 import pypdf
-import anthropic
+from groq import Groq
 import streamlit as st
 
 # ── Page config ────────────────────────────────────────────────────────────────
@@ -92,17 +92,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Anthropic client ───────────────────────────────────────────────────────────
+# ── Groq client ───────────────────────────────────────────────────────────
 @st.cache_resource
 def get_client():
-    # Streamlit Cloud: set via App Settings → Secrets
-    # Local: set ANTHROPIC_API_KEY env var
-    api_key = st.secrets.get("ANTHROPIC_API_KEY", os.environ.get("ANTHROPIC_API_KEY", ""))
+    api_key = st.secrets.get(
+        "GROQ_API_KEY",
+        os.environ.get("GROQ_API_KEY", "")
+    )
     if not api_key:
         return None
-    return anthropic.Anthropic(api_key=api_key)
+    return Groq(api_key=api_key)
 
-MODEL = "claude-opus-4-5"
+MODEL = "llama-3.3-70b-versatile"
 
 
 # ── Core logic (was backend/main.py) ──────────────────────────────────────────
@@ -145,7 +146,7 @@ def build_doc_context(docs: dict, max_chars: int = 60_000) -> str:
 def run_agent(mode: str, query: str, docs: dict) -> str:
     client = get_client()
     if client is None:
-        return "❌ **ANTHROPIC_API_KEY not set.** Add it in Streamlit Secrets (Settings → Secrets) as:\n```\nANTHROPIC_API_KEY = 'sk-ant-...'\n```"
+        return "❌ **GROQ_API_KEY not set.** Add it in Streamlit Secrets (Settings → Secrets) as:\n```\nANTHROPIC_API_KEY = 'sk-ant-...'\n```"
 
     doc_context = build_doc_context(docs)
 
@@ -221,13 +222,23 @@ def run_agent(mode: str, query: str, docs: dict) -> str:
         """).strip()
         user = (f"Documents:\n{doc_context}\n\nQuestion: {query}") if doc_context else query
 
-    response = client.messages.create(
-        model=MODEL,
+    response = client.chat.completions.create(
+    model=MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": system
+            },
+            {
+                "role": "user",
+                "content": user
+            }
+        ],
+        temperature=0.3,
         max_tokens=2048,
-        system=system,
-        messages=[{"role": "user", "content": user}],
     )
-    return response.content[0].text
+
+    return response.choices[0].message.content
 
 
 # ── Session state ──────────────────────────────────────────────────────────────
@@ -250,7 +261,7 @@ with st.sidebar:
     <div style='text-align:center;padding:1rem 0 0.5rem'>
       <div style='font-size:2.5rem'>🔬</div>
       <div style='font-family:IBM Plex Mono,monospace;font-size:16px;font-weight:600;color:#60a5fa'>Research Agent</div>
-      <div style='font-size:11px;color:#5c6680;margin-top:4px'>Powered by Claude</div>
+      <div style='font-size:11px;color:#5c6680;margin-top:4px'>Powered by Groq</div>
     </div>
     """, unsafe_allow_html=True)
     st.markdown("---")
@@ -450,6 +461,6 @@ with tab_arxiv:
 st.markdown("---")
 st.markdown("""
 <div style='text-align:center;color:#3a4060;font-size:12px;font-family:IBM Plex Mono,monospace;padding:1rem 0'>
-  Research Paper Agent · Streamlit Cloud · Powered by Claude & arXiv
+  Research Paper Agent · Streamlit Cloud · Powered by Groq LLaMA 3 & arXiv
 </div>
 """, unsafe_allow_html=True)
