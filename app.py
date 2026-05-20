@@ -451,7 +451,7 @@ with tab_arxiv:
             </div>""", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🤖 Ask Claude to synthesize these results", use_container_width=True):
+        if st.button("🤖 Ask Groq to synthesize these results", use_container_width=True):
             with st.spinner("Synthesizing…"):
                 answer = run_agent("arxiv", arxiv_query, DOCS)
             st.session_state.messages.append({"role": "user", "content": f"Synthesize arXiv: '{arxiv_query}'"})
